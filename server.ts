@@ -31,7 +31,7 @@ app.get("/", (req: Request, res: Response) => {
   });
 });
 
-app.use("/api/v1/anime", animeIndo);
+app.use("/api/v2/anime", animeIndo);
 
 app.listen(port, () => {
   console.log(`Server is Fire at http://localhost:${port}`);
