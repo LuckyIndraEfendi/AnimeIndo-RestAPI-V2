@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const animeindoController_1 = require("../controllers/animeindoController");
+const animeIndo = (0, express_1.Router)();
+animeIndo.get("/ongoing", animeindoController_1.getAnimeOnGoing);
+animeIndo.get("/:anime_code/:anime_id", animeindoController_1.getAnimeByDetails);
+animeIndo.get("/properties/season", animeindoController_1.getAnimeSeasonList);
+animeIndo.get("/properties/season/:season_id", animeindoController_1.getAnimeBySeasonList);
+animeIndo.get("/properties/genre", animeindoController_1.getAnimePropertiesGenre);
+animeIndo.get("/properties/genre/:genre_id", animeindoController_1.getAnimeByGenre);
+animeIndo.get("/schedule", animeindoController_1.getAnimeBySchedule);
+exports.default = animeIndo;
