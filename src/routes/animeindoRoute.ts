@@ -7,6 +7,7 @@ import {
   getAnimePropertiesGenre,
   getAnimeSeasonList,
   getAnimeByDetails,
+  getAnimeByEpisode,
 } from "../controllers/animeindoController";
 
 const animeIndo = Router();
@@ -22,5 +23,7 @@ animeIndo.get("/properties/genre", getAnimePropertiesGenre);
 animeIndo.get("/properties/genre/:genre_id", getAnimeByGenre);
 
 animeIndo.get("/schedule", getAnimeBySchedule);
+
+animeIndo.get("/:anime_code/:anime_id/episode/:episode_id", getAnimeByEpisode);
 
 export default animeIndo;

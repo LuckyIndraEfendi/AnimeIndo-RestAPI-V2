@@ -161,11 +161,17 @@ export const getAnimeByDetails = (
   req: Request,
   res: Response
 ): Promise<void> => {
+  const { page } = req.query;
   const { anime_code, anime_id } = req.params;
   return new Promise((resolve, reject) => {
+    let has_next_page = false;
+    let has_prev_page = false;
+    let has_next_link: string | null = null;
+    let has_prev_link: string | null = null;
+
     try {
       const options = {
-        url: `${baseURL}/anime/${anime_code}/${anime_id}`,
+        url: `${baseURL}/anime/${anime_code}/${anime_id}?page=${page || 1}`,
       };
 
       request(
@@ -183,13 +189,46 @@ export const getAnimeByDetails = (
           const $$ = cheerio.load(episode);
           const episode_list = new Array();
           $$("a").each((i, e) => {
-            const eps = $(e).attr("href")?.trim().replace(`${baseURL}`, "");
-            const epsTitle = $(e).text().replace(/\s+/g, " ");
-            episode_list.push({
-              episodeId: eps,
-              epsTitle: epsTitle,
-            });
+            const eps = $$(e).attr("href")?.trim().replace(`${baseURL}`, "");
+            const epsTitle = $$(e).text().replace(/\s+/g, " ");
+            if (eps && epsTitle.trim()) {
+              episode_list.push({
+                episodeId: eps,
+                epsTitle: epsTitle,
+              });
+            }
+            if (i === $$("a").length - 1 && !epsTitle.trim()) {
+              has_next_page = true;
+              has_next_link = eps || null;
+            }
           });
+
+          const list_episode = $("#animeEpisodes > a")
+            .map((i, index) => ({
+              eps_title: $(index)
+                .text()
+                ?.replace(/\n/g, "")
+                ?.replace("Ep", "Episode -"),
+              eps_slug: $(index).attr("href")?.replace(baseURL, ""),
+              active_eps: $(index)?.hasClass("active-ep"),
+            }))
+            ?.get();
+
+          if (
+            list_episode.length > 0 &&
+            !list_episode[list_episode.length - 1].eps_title.trim()
+          ) {
+            has_next_link =
+              list_episode[list_episode.length - 1].eps_slug || null;
+            list_episode.pop();
+            has_next_page = true;
+          }
+
+          if (list_episode.length > 0 && !list_episode[0].eps_title.trim()) {
+            has_prev_link = list_episode[0].eps_slug || null;
+            list_episode.shift();
+            has_prev_page = true;
+          }
 
           const title = $(
             "body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__title > h3"
@@ -287,7 +326,6 @@ export const getAnimeByDetails = (
             .text()
             ?.replace(/\n/g, "")
             ?.trim();
-
           res.status(200).json({
             status: "success",
             data: {
@@ -313,9 +351,16 @@ export const getAnimeByDetails = (
               total_eps,
               credit,
               episode_list,
+              has_next: {
+                has_next_link,
+                has_next_page,
+              },
+              // has_prev: {
+              //   has_prev_link,
+              //   has_prev_page,
+              // },
             },
           });
-
           resolve();
         }
       );
@@ -663,6 +708,103 @@ export const getAnimeBySchedule = (
           res.status(200).json({
             status: "success",
             data: filteredAnimeList,
+          });
+
+          resolve();
+        }
+      );
+    } catch (error: any) {
+      res.status(500).json({
+        status: "error",
+        message: error.message,
+      });
+      reject(error);
+    }
+  });
+};
+
+export const getAnimeByEpisode = (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const { anime_code, anime_id, episode_id } = req.params;
+      const { page } = req.query;
+      const options = {
+        url: `${baseURL}/anime/${anime_code}/${anime_id}/episode/${episode_id}?YufB6E2rKx3pM0F=iV2Ymxtsfa&1cerLmDzYXioTFa=kuramadrive&page=${
+          page || 1
+        }`,
+      };
+      let has_next_page = false;
+      let has_next_link: any = null;
+      let has_prev_link: any = null;
+      let has_prev_page = false;
+      request(
+        options,
+        (error: Error | null, response: IncomingMessage, body: string) => {
+          if (error || response.statusCode !== 200) {
+            return res.status(500).json({
+              status: "error",
+              message: "Failed to retrieve anime list",
+            });
+          }
+
+          const $ = cheerio.load(body);
+
+          const episode_list = $("#player > source")
+            .map((i, index) => ({
+              source_video: $(index).attr("src"),
+              type_video: $(index).attr("type"),
+              size: $(index).attr("size"),
+            }))
+            ?.get();
+          const eps_title = $("#episodeTitle").text();
+          const list_episode = $("#animeEpisodes > a")
+            .map((i, index) => ({
+              eps_title: $(index)
+                .text()
+                ?.replace(/\n/g, "")
+                ?.replace("Ep", "Episode -"),
+              eps_slug: $(index).attr("href")?.replace(baseURL, ""),
+              active_eps: $(index)?.hasClass("active-ep"),
+            }))
+            ?.get();
+          const total_eps = $("#animeEpisodes > a")
+            .map((i, index) => $(index).text())
+            .get().length;
+
+          if (
+            list_episode.length > 0 &&
+            !list_episode[list_episode.length - 1].eps_title.trim()
+          ) {
+            has_next_link = list_episode[list_episode.length - 1].eps_slug;
+            list_episode.pop();
+            has_next_page = true;
+          }
+
+          if (list_episode.length > 0 && !list_episode[0].eps_title.trim()) {
+            has_prev_link = list_episode[0].eps_slug;
+            list_episode.shift();
+            has_prev_page = true;
+          }
+
+          res.status(200).json({
+            status: "success",
+            data: {
+              eps_title,
+              list_episode,
+              total_eps,
+              episode_list: episode_list,
+              has_next: {
+                has_next_page,
+                has_next_link,
+              },
+              has_previous: {
+                has_prev_page,
+                has_prev_link,
+              },
+            },
           });
 
           resolve();

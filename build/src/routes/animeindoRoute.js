@@ -10,4 +10,5 @@ animeIndo.get("/properties/season/:season_id", animeindoController_1.getAnimeByS
 animeIndo.get("/properties/genre", animeindoController_1.getAnimePropertiesGenre);
 animeIndo.get("/properties/genre/:genre_id", animeindoController_1.getAnimeByGenre);
 animeIndo.get("/schedule", animeindoController_1.getAnimeBySchedule);
+animeIndo.get("/:anime_code/:anime_id/episode/:episode_id", animeindoController_1.getAnimeByEpisode);
 exports.default = animeIndo;

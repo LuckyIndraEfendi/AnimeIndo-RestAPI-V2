@@ -26,7 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAnimeBySchedule = exports.getAnimeByGenre = exports.getAnimePropertiesGenre = exports.getAnimeBySeasonList = exports.getAnimeByDetails = exports.getAnimeSeasonList = exports.getAnimeOnGoing = void 0;
+exports.getAnimeByEpisode = exports.getAnimeBySchedule = exports.getAnimeByGenre = exports.getAnimePropertiesGenre = exports.getAnimeBySeasonList = exports.getAnimeByDetails = exports.getAnimeSeasonList = exports.getAnimeOnGoing = void 0;
 const cheerio = __importStar(require("cheerio"));
 const request_1 = __importDefault(require("request"));
 const baseURL_1 = require("../lib/baseURL");
@@ -143,14 +143,19 @@ const getAnimeSeasonList = (req, res) => {
 };
 exports.getAnimeSeasonList = getAnimeSeasonList;
 const getAnimeByDetails = (req, res) => {
+    const { page } = req.query;
     const { anime_code, anime_id } = req.params;
     return new Promise((resolve, reject) => {
+        let has_next_page = false;
+        let has_prev_page = false;
+        let has_next_link = null;
+        let has_prev_link = null;
         try {
             const options = {
-                url: `${baseURL_1.baseURL}/anime/${anime_code}/${anime_id}`,
+                url: `${baseURL_1.baseURL}/anime/${anime_code}/${anime_id}?page=${page || 1}`,
             };
             (0, request_1.default)(options, (error, response, body) => {
-                var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v;
+                var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w;
                 if (error || response.statusCode !== 200) {
                     return res.status(500).json({
                         status: "error",
@@ -163,27 +168,55 @@ const getAnimeByDetails = (req, res) => {
                 const episode_list = new Array();
                 $$("a").each((i, e) => {
                     var _a;
-                    const eps = (_a = $(e).attr("href")) === null || _a === void 0 ? void 0 : _a.trim().replace(`${baseURL_1.baseURL}`, "");
-                    const epsTitle = $(e).text().replace(/\s+/g, " ");
-                    episode_list.push({
-                        episodeId: eps,
-                        epsTitle: epsTitle,
-                    });
+                    const eps = (_a = $$(e).attr("href")) === null || _a === void 0 ? void 0 : _a.trim().replace(`${baseURL_1.baseURL}`, "");
+                    const epsTitle = $$(e).text().replace(/\s+/g, " ");
+                    if (eps && epsTitle.trim()) {
+                        episode_list.push({
+                            episodeId: eps,
+                            epsTitle: epsTitle,
+                        });
+                    }
+                    if (i === $$("a").length - 1 && !epsTitle.trim()) {
+                        has_next_page = true;
+                        has_next_link = eps || null;
+                    }
                 });
+                const list_episode = (_a = $("#animeEpisodes > a")
+                    .map((i, index) => {
+                    var _a, _b, _c, _d;
+                    return ({
+                        eps_title: (_b = (_a = $(index)
+                            .text()) === null || _a === void 0 ? void 0 : _a.replace(/\n/g, "")) === null || _b === void 0 ? void 0 : _b.replace("Ep", "Episode -"),
+                        eps_slug: (_c = $(index).attr("href")) === null || _c === void 0 ? void 0 : _c.replace(baseURL_1.baseURL, ""),
+                        active_eps: (_d = $(index)) === null || _d === void 0 ? void 0 : _d.hasClass("active-ep"),
+                    });
+                })) === null || _a === void 0 ? void 0 : _a.get();
+                if (list_episode.length > 0 &&
+                    !list_episode[list_episode.length - 1].eps_title.trim()) {
+                    has_next_link =
+                        list_episode[list_episode.length - 1].eps_slug || null;
+                    list_episode.pop();
+                    has_next_page = true;
+                }
+                if (list_episode.length > 0 && !list_episode[0].eps_title.trim()) {
+                    has_prev_link = list_episode[0].eps_slug || null;
+                    list_episode.shift();
+                    has_prev_page = true;
+                }
                 const title = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__title > h3").text();
                 const images = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-3 > div").attr("data-setbg");
-                const descriptions = (_b = (_a = $("#synopsisField")
-                    .text()) === null || _a === void 0 ? void 0 : _a.replace(/\n/g, "")) === null || _b === void 0 ? void 0 : _b.trim();
-                const type = (_d = (_c = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(1) > div > div.col-9 > a")
-                    .text()) === null || _c === void 0 ? void 0 : _c.replace(/\n/g, "")) === null || _d === void 0 ? void 0 : _d.trim();
-                const total_eps = (_f = (_e = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(2) > div > div.col-9 > a")
-                    .text()) === null || _e === void 0 ? void 0 : _e.replace(/\n/g, "")) === null || _f === void 0 ? void 0 : _f.trim();
-                const status = (_h = (_g = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(3) > div > div.col-9 > a")
-                    .text()) === null || _g === void 0 ? void 0 : _g.replace(/\n/g, "")) === null || _h === void 0 ? void 0 : _h.trim();
-                const release = (_k = (_j = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(4) > div > div.col-9")
-                    .text()) === null || _j === void 0 ? void 0 : _j.replace(/\n/g, "")) === null || _k === void 0 ? void 0 : _k.trim();
-                const season = (_m = (_l = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(5) > div > div.col-9 > a")
-                    .text()) === null || _l === void 0 ? void 0 : _l.replace(/\n/g, "")) === null || _m === void 0 ? void 0 : _m.trim();
+                const descriptions = (_c = (_b = $("#synopsisField")
+                    .text()) === null || _b === void 0 ? void 0 : _b.replace(/\n/g, "")) === null || _c === void 0 ? void 0 : _c.trim();
+                const type = (_e = (_d = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(1) > div > div.col-9 > a")
+                    .text()) === null || _d === void 0 ? void 0 : _d.replace(/\n/g, "")) === null || _e === void 0 ? void 0 : _e.trim();
+                const total_eps = (_g = (_f = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(2) > div > div.col-9 > a")
+                    .text()) === null || _f === void 0 ? void 0 : _f.replace(/\n/g, "")) === null || _g === void 0 ? void 0 : _g.trim();
+                const status = (_j = (_h = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(3) > div > div.col-9 > a")
+                    .text()) === null || _h === void 0 ? void 0 : _h.replace(/\n/g, "")) === null || _j === void 0 ? void 0 : _j.trim();
+                const release = (_l = (_k = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(4) > div > div.col-9")
+                    .text()) === null || _k === void 0 ? void 0 : _k.replace(/\n/g, "")) === null || _l === void 0 ? void 0 : _l.trim();
+                const season = (_o = (_m = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(5) > div > div.col-9 > a")
+                    .text()) === null || _m === void 0 ? void 0 : _m.replace(/\n/g, "")) === null || _o === void 0 ? void 0 : _o.trim();
                 const duration = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(6) > div > div.col-9 > a").text();
                 const quality = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(7) > div > div.col-9 > a").text();
                 const counrty = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(1) > ul > li:nth-child(8) > div > div.col-9 > a").text();
@@ -191,20 +224,20 @@ const getAnimeByDetails = (req, res) => {
                 const genre = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(1) > div > div.col-9 > a")
                     .map((i, index) => { var _a, _b; return (_b = (_a = $(index).text()) === null || _a === void 0 ? void 0 : _a.replace(/\n/g, "")) === null || _b === void 0 ? void 0 : _b.trim(); })
                     .get();
-                const explisit = (_p = (_o = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(2) > div > div.col-9")
-                    .text()) === null || _o === void 0 ? void 0 : _o.replace(/\n/g, "")) === null || _p === void 0 ? void 0 : _p.trim();
-                const demogration = (_r = (_q = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(3) > div > div.col-9")
-                    .text()) === null || _q === void 0 ? void 0 : _q.replace(/\n/g, "")) === null || _r === void 0 ? void 0 : _r.trim();
+                const explisit = (_q = (_p = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(2) > div > div.col-9")
+                    .text()) === null || _p === void 0 ? void 0 : _p.replace(/\n/g, "")) === null || _q === void 0 ? void 0 : _q.trim();
+                const demogration = (_s = (_r = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(3) > div > div.col-9")
+                    .text()) === null || _r === void 0 ? void 0 : _r.replace(/\n/g, "")) === null || _s === void 0 ? void 0 : _s.trim();
                 const themes = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(4) > div > div.col-9 > a")
                     .map((i, index) => { var _a, _b; return (_b = (_a = $(index).text()) === null || _a === void 0 ? void 0 : _a.replace(/\n/g, "")) === null || _b === void 0 ? void 0 : _b.trim(); })
                     .get();
-                const studio = (_t = (_s = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(5) > div > div.col-9 > a")
-                    .text()) === null || _s === void 0 ? void 0 : _s.replace(/\n/g, "")) === null || _t === void 0 ? void 0 : _t.trim();
+                const studio = (_u = (_t = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(5) > div > div.col-9 > a")
+                    .text()) === null || _t === void 0 ? void 0 : _t.replace(/\n/g, "")) === null || _u === void 0 ? void 0 : _u.trim();
                 const ratings = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(6) > div > div.col-9 > a").text();
                 const popularity = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(7) > div > div.col-9 > a").text();
                 const rating_policy = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(8) > div > div.col-9 > a").text();
-                const credit = (_v = (_u = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(9) > div > div.col-9 > a")
-                    .text()) === null || _u === void 0 ? void 0 : _u.replace(/\n/g, "")) === null || _v === void 0 ? void 0 : _v.trim();
+                const credit = (_w = (_v = $("body > section.anime-details.spad > div > div.anime__details__content > div > div.col-lg-9 > div > div.anime__details__widget > div > div:nth-child(2) > ul > li:nth-child(9) > div > div.col-9 > a")
+                    .text()) === null || _v === void 0 ? void 0 : _v.replace(/\n/g, "")) === null || _w === void 0 ? void 0 : _w.trim();
                 res.status(200).json({
                     status: "success",
                     data: {
@@ -230,6 +263,14 @@ const getAnimeByDetails = (req, res) => {
                         total_eps,
                         credit,
                         episode_list,
+                        has_next: {
+                            has_next_link,
+                            has_next_page,
+                        },
+                        // has_prev: {
+                        //   has_prev_link,
+                        //   has_prev_page,
+                        // },
                     },
                 });
                 resolve();
@@ -499,3 +540,85 @@ const getAnimeBySchedule = (req, res) => {
     });
 };
 exports.getAnimeBySchedule = getAnimeBySchedule;
+const getAnimeByEpisode = (req, res) => {
+    return new Promise((resolve, reject) => {
+        try {
+            const { anime_code, anime_id, episode_id } = req.params;
+            const { page } = req.query;
+            const options = {
+                url: `${baseURL_1.baseURL}/anime/${anime_code}/${anime_id}/episode/${episode_id}?YufB6E2rKx3pM0F=iV2Ymxtsfa&1cerLmDzYXioTFa=kuramadrive&page=${page || 1}`,
+            };
+            let has_next_page = false;
+            let has_next_link = null;
+            let has_prev_link = null;
+            let has_prev_page = false;
+            (0, request_1.default)(options, (error, response, body) => {
+                var _a, _b;
+                if (error || response.statusCode !== 200) {
+                    return res.status(500).json({
+                        status: "error",
+                        message: "Failed to retrieve anime list",
+                    });
+                }
+                const $ = cheerio.load(body);
+                const episode_list = (_a = $("#player > source")
+                    .map((i, index) => ({
+                    source_video: $(index).attr("src"),
+                    type_video: $(index).attr("type"),
+                    size: $(index).attr("size"),
+                }))) === null || _a === void 0 ? void 0 : _a.get();
+                const eps_title = $("#episodeTitle").text();
+                const list_episode = (_b = $("#animeEpisodes > a")
+                    .map((i, index) => {
+                    var _a, _b, _c, _d;
+                    return ({
+                        eps_title: (_b = (_a = $(index)
+                            .text()) === null || _a === void 0 ? void 0 : _a.replace(/\n/g, "")) === null || _b === void 0 ? void 0 : _b.replace("Ep", "Episode -"),
+                        eps_slug: (_c = $(index).attr("href")) === null || _c === void 0 ? void 0 : _c.replace(baseURL_1.baseURL, ""),
+                        active_eps: (_d = $(index)) === null || _d === void 0 ? void 0 : _d.hasClass("active-ep"),
+                    });
+                })) === null || _b === void 0 ? void 0 : _b.get();
+                const total_eps = $("#animeEpisodes > a")
+                    .map((i, index) => $(index).text())
+                    .get().length;
+                if (list_episode.length > 0 &&
+                    !list_episode[list_episode.length - 1].eps_title.trim()) {
+                    has_next_link = list_episode[list_episode.length - 1].eps_slug;
+                    list_episode.pop();
+                    has_next_page = true;
+                }
+                if (list_episode.length > 0 && !list_episode[0].eps_title.trim()) {
+                    has_prev_link = list_episode[0].eps_slug;
+                    list_episode.shift();
+                    has_prev_page = true;
+                }
+                res.status(200).json({
+                    status: "success",
+                    data: {
+                        eps_title,
+                        list_episode,
+                        total_eps,
+                        episode_list: episode_list,
+                        has_next: {
+                            has_next_page,
+                            has_next_link,
+                        },
+                        has_previous: {
+                            has_prev_page,
+                            has_prev_link,
+                        },
+                    },
+                });
+                resolve();
+            });
+        }
+        catch (error) {
+            res.status(500).json({
+                status: "error",
+                message: error.message,
+            });
+            reject(error);
+        }
+    });
+};
+exports.getAnimeByEpisode = getAnimeByEpisode;

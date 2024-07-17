@@ -30,7 +30,7 @@ app.get("/", (req, res) => {
         route: "Go to our route /api/v1/anime",
     });
 });
-app.use("/api/v1/anime", animeindoRoute_1.default);
+app.use("/api/v2/anime", animeindoRoute_1.default);
 app.listen(port, () => {
     console.log(`Server is Fire at http://localhost:${port}`);
 });
