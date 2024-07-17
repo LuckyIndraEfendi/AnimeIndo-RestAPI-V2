@@ -8,11 +8,15 @@ import {
   getAnimeSeasonList,
   getAnimeByDetails,
   getAnimeByEpisode,
+  getAnimeLatest,
+  getAnimeMovie,
 } from "../controllers/animeindoController";
 
 const animeIndo = Router();
 
 animeIndo.get("/ongoing", getAnimeOnGoing);
+animeIndo.get("/completed", getAnimeLatest);
+animeIndo.get("/movie", getAnimeMovie);
 
 animeIndo.get("/:anime_code/:anime_id", getAnimeByDetails);
 

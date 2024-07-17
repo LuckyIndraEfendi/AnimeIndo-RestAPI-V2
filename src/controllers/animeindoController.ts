@@ -92,6 +92,182 @@ export const getAnimeOnGoing = (req: Request, res: Response): Promise<void> => {
   });
 };
 
+export const getAnimeLatest = (req: Request, res: Response): Promise<void> => {
+  const { order_by, page } = req.query;
+  return new Promise((resolve, reject) => {
+    try {
+      const options = {
+        url: `${baseURL}/quick/finished?order_by=${order_by || "latest"}&page=${
+          page || 1
+        }`,
+      };
+
+      const animeList: Array<any> = [];
+
+      request(
+        options,
+        (error: Error | null, response: IncomingMessage, body: string) => {
+          if (error || response.statusCode !== 200) {
+            return res.status(500).json({
+              status: "error",
+              message: "Failed to retrieve anime list",
+            });
+          }
+
+          const $ = cheerio.load(body);
+
+          $("#animeList > div > div").each((index, el) => {
+            const typeList = $(el)
+              .find("div > ul > a")
+              .map((i, index) => $(index).text())
+              .get();
+
+            const slug = $(el)
+              .find("div > a")
+              .attr("href")
+              ?.replace(baseURL, "");
+
+            const title = $(el)
+              .find("div > h5")
+              .text()
+              ?.replace(/\n/g, "")
+              ?.trim()
+              ?.replace(/"/g, "");
+
+            const episode = $(el)
+              .find("a > div > div.ep > span")
+              .text()
+              ?.replace(/\n/g, "")
+              ?.trim();
+
+            const image = $(el).find("a > div").attr("data-setbg");
+
+            animeList.push({
+              type: typeList,
+              slug,
+              title,
+              episode,
+              image,
+            });
+          });
+
+          const filteredAnimeList = animeList.filter((anime) => {
+            return anime.type.length > 0 || anime.title || anime.episode;
+          });
+
+          if (filteredAnimeList.length === 0) {
+            return res.status(404).json({
+              status: "error",
+              message: "No anime found",
+            });
+          }
+
+          res.status(200).json({
+            status: "success",
+            data: filteredAnimeList,
+          });
+
+          resolve();
+        }
+      );
+    } catch (error: any) {
+      res.status(500).json({
+        status: "error",
+        message: error.message,
+      });
+      reject(error);
+    }
+  });
+};
+
+export const getAnimeMovie = (req: Request, res: Response): Promise<void> => {
+  const { order_by, page } = req.query;
+  return new Promise((resolve, reject) => {
+    try {
+      const options = {
+        url: `${baseURL}/quick/movie?order_by=${order_by || "latest"}&page=${
+          page || 1
+        }`,
+      };
+
+      const animeList: Array<any> = [];
+
+      request(
+        options,
+        (error: Error | null, response: IncomingMessage, body: string) => {
+          if (error || response.statusCode !== 200) {
+            return res.status(500).json({
+              status: "error",
+              message: "Failed to retrieve anime list",
+            });
+          }
+
+          const $ = cheerio.load(body);
+
+          $("#animeList > div > div").each((index, el) => {
+            const typeList = $(el)
+              .find("div > ul > a")
+              .map((i, index) => $(index).text())
+              .get();
+
+            const slug = $(el)
+              .find("div > a")
+              .attr("href")
+              ?.replace(baseURL, "");
+
+            const title = $(el)
+              .find("div > h5")
+              .text()
+              ?.replace(/\n/g, "")
+              ?.trim()
+              ?.replace(/"/g, "");
+
+            const episode = $(el)
+              .find("a > div > div.ep > span")
+              .text()
+              ?.replace(/\n/g, "")
+              ?.trim();
+
+            const image = $(el).find("a > div").attr("data-setbg");
+
+            animeList.push({
+              type: typeList,
+              slug,
+              title,
+              episode,
+              image,
+            });
+          });
+
+          const filteredAnimeList = animeList.filter((anime) => {
+            return anime.type.length > 0 || anime.title || anime.episode;
+          });
+
+          if (filteredAnimeList.length === 0) {
+            return res.status(404).json({
+              status: "error",
+              message: "No anime found",
+            });
+          }
+
+          res.status(200).json({
+            status: "success",
+            data: filteredAnimeList,
+          });
+
+          resolve();
+        }
+      );
+    } catch (error: any) {
+      res.status(500).json({
+        status: "error",
+        message: error.message,
+      });
+      reject(error);
+    }
+  });
+};
+
 export const getAnimeSeasonList = (
   req: Request,
   res: Response
