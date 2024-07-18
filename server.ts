@@ -3,12 +3,14 @@ import animeIndo from "./src/routes/animeindoRoute";
 import cors from "cors";
 import limiter from "./src/middleware/rateLimit";
 import "dotenv/config";
+import morgan from "morgan";
 
 const app: Application = express();
 const port = process.env.PORT || 8000;
 
 app.use(express.json());
 app.use(limiter);
+app.use(morgan("combined"));
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN,

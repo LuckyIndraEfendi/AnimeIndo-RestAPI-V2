@@ -26,7 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAnimeByEpisode = exports.getAnimeBySchedule = exports.getAnimeByGenre = exports.getAnimePropertiesGenre = exports.getAnimeBySeasonList = exports.getAnimeByDetails = exports.getAnimeSeasonList = exports.getAnimeMovie = exports.getAnimeLatest = exports.getAnimeOnGoing = void 0;
+exports.getAnimeByEpisode = exports.getAnimeBySchedule = exports.getAnimeByGenre = exports.getAnimePropertiesGenre = exports.getAnimeByDetails = exports.getAnimeBySeasonList = exports.getAnimeSeasonList = exports.getAnimeMovie = exports.getAnimeLatest = exports.getAnimeOnGoing = void 0;
 const cheerio = __importStar(require("cheerio"));
 const request_1 = __importDefault(require("request"));
 const baseURL_1 = require("../lib/baseURL");
@@ -35,7 +35,7 @@ const getAnimeOnGoing = (req, res) => {
     return new Promise((resolve, reject) => {
         try {
             const options = {
-                url: `${baseURL_1.baseURL}/quick/ongoing?order_by=${order_by || "ongoing"}&page=${page || 1}`,
+                url: `${baseURL_1.baseURL}/quick/ongoing?order_by=${order_by || "updated"}&page=${page || 1}`,
             };
             let has_next_page = false;
             let has_prev_page = false;
@@ -301,7 +301,6 @@ const getAnimeMovie = (req, res) => {
 };
 exports.getAnimeMovie = getAnimeMovie;
 const getAnimeSeasonList = (req, res) => {
-    const { page } = req.query;
     return new Promise((resolve, reject) => {
         try {
             const options = {
@@ -319,7 +318,7 @@ const getAnimeSeasonList = (req, res) => {
                 $("#animeList > div > div > ul > li").each((index, el) => {
                     var _a, _b, _c, _d, _e, _f, _g;
                     const season_title = (_c = (_b = (_a = $(el)
-                        .find("a")
+                        .find("a > span")
                         .text()) === null || _a === void 0 ? void 0 : _a.replace(/\n/g, "")) === null || _b === void 0 ? void 0 : _b.trim()) === null || _c === void 0 ? void 0 : _c.replace(/"/g, "");
                     const season_slug = (_g = (_f = (_e = (_d = $(el)
                         .find("a")
@@ -337,6 +336,7 @@ const getAnimeSeasonList = (req, res) => {
             });
         }
         catch (error) {
+            console.log(error);
             res.status(500).json({
                 status: "error",
                 message: error.message,
@@ -346,6 +346,73 @@ const getAnimeSeasonList = (req, res) => {
     });
 };
 exports.getAnimeSeasonList = getAnimeSeasonList;
+const getAnimeBySeasonList = (req, res) => {
+    const { order_by, page } = req.query;
+    const { season_id } = req.params;
+    return new Promise((resolve, reject) => {
+        try {
+            const options = {
+                url: `${baseURL_1.baseURL}/properties/season/${season_id}?order_by=${order_by || "most_viewed"}&page=${page || 1}`,
+            };
+            const animeList = [];
+            (0, request_1.default)(options, (error, response, body) => {
+                if (error || response.statusCode !== 200) {
+                    return res.status(500).json({
+                        status: "error",
+                        message: "Failed to retrieve anime list",
+                    });
+                }
+                const $ = cheerio.load(body);
+                $("#animeList > div > div").each((index, el) => {
+                    var _a, _b, _c, _d, _e, _f;
+                    const typeList = $(el)
+                        .find("div > ul > a")
+                        .map((i, index) => $(index).text())
+                        .get();
+                    const slug = (_a = $(el)
+                        .find("div > a")
+                        .attr("href")) === null || _a === void 0 ? void 0 : _a.replace(baseURL_1.baseURL, "");
+                    const title = (_d = (_c = (_b = $(el)
+                        .find("div > h5")
+                        .text()) === null || _b === void 0 ? void 0 : _b.replace(/\n/g, "")) === null || _c === void 0 ? void 0 : _c.trim()) === null || _d === void 0 ? void 0 : _d.replace(/"/g, "");
+                    const rating = (_f = (_e = $(el)
+                        .find("a > div > div.ep > span")
+                        .text()) === null || _e === void 0 ? void 0 : _e.replace(/\n/g, "")) === null || _f === void 0 ? void 0 : _f.trim();
+                    const image = $(el).find("a > div").attr("data-setbg");
+                    animeList.push({
+                        type: typeList,
+                        slug,
+                        title,
+                        rating,
+                        image,
+                    });
+                });
+                const filteredAnimeList = animeList.filter((anime) => {
+                    return anime.type.length > 0 || anime.title || anime.episode;
+                });
+                if (filteredAnimeList.length === 0) {
+                    return res.status(404).json({
+                        status: "error",
+                        message: "No anime found",
+                    });
+                }
+                res.status(200).json({
+                    status: "success",
+                    data: filteredAnimeList,
+                });
+                resolve();
+            });
+        }
+        catch (error) {
+            res.status(500).json({
+                status: "error",
+                message: error.message,
+            });
+            reject(error);
+        }
+    });
+};
+exports.getAnimeBySeasonList = getAnimeBySeasonList;
 const getAnimeByDetails = (req, res) => {
     const { page } = req.query;
     const { anime_code, anime_id } = req.params;
@@ -490,73 +557,6 @@ const getAnimeByDetails = (req, res) => {
     });
 };
 exports.getAnimeByDetails = getAnimeByDetails;
-const getAnimeBySeasonList = (req, res) => {
-    const { order_by, page } = req.query;
-    const { season_id } = req.params;
-    return new Promise((resolve, reject) => {
-        try {
-            const options = {
-                url: `${baseURL_1.baseURL}/properties/season/${season_id}?order_by=${order_by || "most_viewed"}&page=${page || 1}`,
-            };
-            const animeList = [];
-            (0, request_1.default)(options, (error, response, body) => {
-                if (error || response.statusCode !== 200) {
-                    return res.status(500).json({
-                        status: "error",
-                        message: "Failed to retrieve anime list",
-                    });
-                }
-                const $ = cheerio.load(body);
-                $("#animeList > div > div").each((index, el) => {
-                    var _a, _b, _c, _d, _e, _f;
-                    const typeList = $(el)
-                        .find("div > ul > a")
-                        .map((i, index) => $(index).text())
-                        .get();
-                    const slug = (_a = $(el)
-                        .find("div > a")
-                        .attr("href")) === null || _a === void 0 ? void 0 : _a.replace(baseURL_1.baseURL, "");
-                    const title = (_d = (_c = (_b = $(el)
-                        .find("div > h5")
-                        .text()) === null || _b === void 0 ? void 0 : _b.replace(/\n/g, "")) === null || _c === void 0 ? void 0 : _c.trim()) === null || _d === void 0 ? void 0 : _d.replace(/"/g, "");
-                    const rating = (_f = (_e = $(el)
-                        .find("a > div > div.ep > span")
-                        .text()) === null || _e === void 0 ? void 0 : _e.replace(/\n/g, "")) === null || _f === void 0 ? void 0 : _f.trim();
-                    const image = $(el).find("a > div").attr("data-setbg");
-                    animeList.push({
-                        type: typeList,
-                        slug,
-                        title,
-                        rating,
-                        image,
-                    });
-                });
-                const filteredAnimeList = animeList.filter((anime) => {
-                    return anime.type.length > 0 || anime.title || anime.episode;
-                });
-                if (filteredAnimeList.length === 0) {
-                    return res.status(404).json({
-                        status: "error",
-                        message: "No anime found",
-                    });
-                }
-                res.status(200).json({
-                    status: "success",
-                    data: filteredAnimeList,
-                });
-                resolve();
-            });
-        }
-        catch (error) {
-            res.status(500).json({
-                status: "error",
-                message: error.message,
-            });
-            reject(error);
-        }
-    });
-};
-exports.getAnimeBySeasonList = getAnimeBySeasonList;
 const getAnimePropertiesGenre = (req, res) => {
     const { page } = req.query;
     return new Promise((resolve, reject) => {
@@ -750,7 +750,7 @@ const getAnimeByEpisode = (req, res) => {
             const { anime_code, anime_id, episode_id } = req.params;
             const { page } = req.query;
             const options = {
-                url: `${baseURL_1.baseURL}/anime/${anime_code}/${anime_id}/episode/${episode_id}?YufB6E2rKx3pM0F=iV2Ymxtsfa&1cerLmDzYXioTFa=kuramadrive&page=${page || 1}`,
+                url: `${baseURL_1.baseURL}/anime/${anime_code}/${anime_id}/episode/${episode_id}?QXCKFC2hpmVFvvv=8vIFROsi7w&PsAdpiUFrAc3n85=kuramadrive&page=${page || 1}`,
             };
             let has_next_page = false;
             let has_next_link = null;
@@ -821,7 +821,6 @@ const getAnimeByEpisode = (req, res) => {
                 status: "error",
                 message: error.message,
             });
-            reject(error);
         }
     });
 };
