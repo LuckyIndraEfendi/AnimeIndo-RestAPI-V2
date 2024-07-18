@@ -26,8 +26,8 @@ app.use((0, cors_1.default)({
 }));
 app.get("/", (req, res) => {
     res.json({
-        message: "Welcome to Express & TypeScript Server",
-        route: "Go to our route /api/v1/anime",
+        message: "Welcome to LuckyAnime Indo V2 & TypeScript Server",
+        route: "Go to our route /api/v2/anime",
     });
 });
 app.use("/api/v2/anime", animeindoRoute_1.default);

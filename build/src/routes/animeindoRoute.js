@@ -4,6 +4,8 @@ const express_1 = require("express");
 const animeindoController_1 = require("../controllers/animeindoController");
 const animeIndo = (0, express_1.Router)();
 animeIndo.get("/ongoing", animeindoController_1.getAnimeOnGoing);
+animeIndo.get("/completed", animeindoController_1.getAnimeLatest);
+animeIndo.get("/movie", animeindoController_1.getAnimeMovie);
 animeIndo.get("/:anime_code/:anime_id", animeindoController_1.getAnimeByDetails);
 animeIndo.get("/properties/season", animeindoController_1.getAnimeSeasonList);
 animeIndo.get("/properties/season/:season_id", animeindoController_1.getAnimeBySeasonList);

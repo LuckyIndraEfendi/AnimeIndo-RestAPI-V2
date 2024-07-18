@@ -26,7 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAnimeByEpisode = exports.getAnimeBySchedule = exports.getAnimeByGenre = exports.getAnimePropertiesGenre = exports.getAnimeBySeasonList = exports.getAnimeByDetails = exports.getAnimeSeasonList = exports.getAnimeOnGoing = void 0;
+exports.getAnimeByEpisode = exports.getAnimeBySchedule = exports.getAnimeByGenre = exports.getAnimePropertiesGenre = exports.getAnimeBySeasonList = exports.getAnimeByDetails = exports.getAnimeSeasonList = exports.getAnimeMovie = exports.getAnimeLatest = exports.getAnimeOnGoing = void 0;
 const cheerio = __importStar(require("cheerio"));
 const request_1 = __importDefault(require("request"));
 const baseURL_1 = require("../lib/baseURL");
@@ -37,6 +37,9 @@ const getAnimeOnGoing = (req, res) => {
             const options = {
                 url: `${baseURL_1.baseURL}/quick/ongoing?order_by=${order_by || "ongoing"}&page=${page || 1}`,
             };
+            let has_next_page = false;
+            let has_prev_page = false;
+            let current_pages = 0;
             const animeList = [];
             (0, request_1.default)(options, (error, response, body) => {
                 if (error || response.statusCode !== 200) {
@@ -47,7 +50,7 @@ const getAnimeOnGoing = (req, res) => {
                 }
                 const $ = cheerio.load(body);
                 $("#animeList > div > div").each((index, el) => {
-                    var _a, _b, _c, _d, _e, _f;
+                    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
                     const typeList = $(el)
                         .find("div > ul > a")
                         .map((i, index) => $(index).text())
@@ -62,6 +65,19 @@ const getAnimeOnGoing = (req, res) => {
                         .find("a > div > div.ep > span")
                         .text()) === null || _e === void 0 ? void 0 : _e.replace(/\n/g, "")) === null || _f === void 0 ? void 0 : _f.trim();
                     const image = $(el).find("a > div").attr("data-setbg");
+                    const current_page = (_g = $("#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a.current-page")) === null || _g === void 0 ? void 0 : _g.text();
+                    const get_hash_next = (_h = $("#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(7)")) === null || _h === void 0 ? void 0 : _h.attr("aria-disabled");
+                    const get_hash_prev = (_j = $("#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(1)")) === null || _j === void 0 ? void 0 : _j.attr("aria-disabled");
+                    if (current_page) {
+                        current_pages = parseInt(current_page);
+                    }
+                    if (get_hash_prev) {
+                        has_prev_page = true;
+                    }
+                    if (get_hash_next) {
+                        has_next_page = true;
+                    }
+                    // if()
                     animeList.push({
                         type: typeList,
                         slug,
@@ -82,6 +98,14 @@ const getAnimeOnGoing = (req, res) => {
                 res.status(200).json({
                     status: "success",
                     data: filteredAnimeList,
+                    total_item: filteredAnimeList.length,
+                    has_next: {
+                        has_next_page: !has_next_page,
+                    },
+                    has_prev: {
+                        has_prev_page: !has_prev_page,
+                    },
+                    current_page: current_pages,
                 });
                 resolve();
             });
@@ -96,6 +120,186 @@ const getAnimeOnGoing = (req, res) => {
     });
 };
 exports.getAnimeOnGoing = getAnimeOnGoing;
+const getAnimeLatest = (req, res) => {
+    const { order_by, page } = req.query;
+    return new Promise((resolve, reject) => {
+        try {
+            const options = {
+                url: `${baseURL_1.baseURL}/quick/finished?order_by=${order_by || "latest"}&page=${page || 1}`,
+            };
+            let has_next_page = false;
+            let has_prev_page = false;
+            let current_pages = 0;
+            const animeList = [];
+            (0, request_1.default)(options, (error, response, body) => {
+                if (error || response.statusCode !== 200) {
+                    return res.status(500).json({
+                        status: "error",
+                        message: "Failed to retrieve anime list",
+                    });
+                }
+                const $ = cheerio.load(body);
+                $("#animeList > div > div").each((index, el) => {
+                    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+                    const typeList = $(el)
+                        .find("div > ul > a")
+                        .map((i, index) => $(index).text())
+                        .get();
+                    const slug = (_a = $(el)
+                        .find("div > a")
+                        .attr("href")) === null || _a === void 0 ? void 0 : _a.replace(baseURL_1.baseURL, "");
+                    const title = (_d = (_c = (_b = $(el)
+                        .find("div > h5")
+                        .text()) === null || _b === void 0 ? void 0 : _b.replace(/\n/g, "")) === null || _c === void 0 ? void 0 : _c.trim()) === null || _d === void 0 ? void 0 : _d.replace(/"/g, "");
+                    const episode = (_f = (_e = $(el)
+                        .find("a > div > div.ep > span")
+                        .text()) === null || _e === void 0 ? void 0 : _e.replace(/\n/g, "")) === null || _f === void 0 ? void 0 : _f.trim();
+                    const image = $(el).find("a > div").attr("data-setbg");
+                    const current_page = (_g = $("#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a.current-page")) === null || _g === void 0 ? void 0 : _g.text();
+                    const get_hash_next = (_h = $("#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(7)")) === null || _h === void 0 ? void 0 : _h.attr("aria-disabled");
+                    const get_hash_prev = (_j = $("#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(1)")) === null || _j === void 0 ? void 0 : _j.attr("aria-disabled");
+                    if (current_page) {
+                        current_pages = parseInt(current_page);
+                    }
+                    if (get_hash_prev) {
+                        has_prev_page = true;
+                    }
+                    if (get_hash_next) {
+                        has_next_page = true;
+                    }
+                    // if()
+                    animeList.push({
+                        type: typeList,
+                        slug,
+                        title,
+                        episode,
+                        image,
+                    });
+                });
+                const filteredAnimeList = animeList.filter((anime) => {
+                    return anime.type.length > 0 || anime.title || anime.episode;
+                });
+                if (filteredAnimeList.length === 0) {
+                    return res.status(404).json({
+                        status: "error",
+                        message: "No anime found",
+                    });
+                }
+                res.status(200).json({
+                    status: "success",
+                    data: filteredAnimeList,
+                    total_item: filteredAnimeList.length,
+                    has_next: {
+                        has_next_page: !has_next_page,
+                    },
+                    has_prev: {
+                        has_prev_page: !has_prev_page,
+                    },
+                    current_page: current_pages,
+                });
+                resolve();
+            });
+        }
+        catch (error) {
+            res.status(500).json({
+                status: "error",
+                message: error.message,
+            });
+            reject(error);
+        }
+    });
+};
+exports.getAnimeLatest = getAnimeLatest;
+const getAnimeMovie = (req, res) => {
+    const { order_by, page } = req.query;
+    return new Promise((resolve, reject) => {
+        try {
+            const options = {
+                url: `${baseURL_1.baseURL}/quick/movie?order_by=${order_by || "latest"}&page=${page || 1}`,
+            };
+            let has_next_page = false;
+            let has_prev_page = false;
+            let current_pages = 0;
+            const animeList = [];
+            (0, request_1.default)(options, (error, response, body) => {
+                if (error || response.statusCode !== 200) {
+                    return res.status(500).json({
+                        status: "error",
+                        message: "Failed to retrieve anime list",
+                    });
+                }
+                const $ = cheerio.load(body);
+                $("#animeList > div > div").each((index, el) => {
+                    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+                    const typeList = $(el)
+                        .find("div > ul > a")
+                        .map((i, index) => $(index).text())
+                        .get();
+                    const slug = (_a = $(el)
+                        .find("div > a")
+                        .attr("href")) === null || _a === void 0 ? void 0 : _a.replace(baseURL_1.baseURL, "");
+                    const title = (_d = (_c = (_b = $(el)
+                        .find("div > h5")
+                        .text()) === null || _b === void 0 ? void 0 : _b.replace(/\n/g, "")) === null || _c === void 0 ? void 0 : _c.trim()) === null || _d === void 0 ? void 0 : _d.replace(/"/g, "");
+                    const episode = (_f = (_e = $(el)
+                        .find("a > div > div.ep > span")
+                        .text()) === null || _e === void 0 ? void 0 : _e.replace(/\n/g, "")) === null || _f === void 0 ? void 0 : _f.trim();
+                    const image = $(el).find("a > div").attr("data-setbg");
+                    const current_page = (_g = $("#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a.current-page")) === null || _g === void 0 ? void 0 : _g.text();
+                    const get_hash_next = (_h = $("#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(7)")) === null || _h === void 0 ? void 0 : _h.attr("aria-disabled");
+                    const get_hash_prev = (_j = $("#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(1)")) === null || _j === void 0 ? void 0 : _j.attr("aria-disabled");
+                    if (current_page) {
+                        current_pages = parseInt(current_page);
+                    }
+                    if (get_hash_prev) {
+                        has_prev_page = true;
+                    }
+                    if (get_hash_next) {
+                        has_next_page = true;
+                    }
+                    // if()
+                    animeList.push({
+                        type: typeList,
+                        slug,
+                        title,
+                        episode,
+                        image,
+                    });
+                });
+                const filteredAnimeList = animeList.filter((anime) => {
+                    return anime.type.length > 0 || anime.title || anime.episode;
+                });
+                if (filteredAnimeList.length === 0) {
+                    return res.status(404).json({
+                        status: "error",
+                        message: "No anime found",
+                    });
+                }
+                res.status(200).json({
+                    status: "success",
+                    data: filteredAnimeList,
+                    total_item: filteredAnimeList.length,
+                    has_next: {
+                        has_next_page: !has_next_page,
+                    },
+                    has_prev: {
+                        has_prev_page: !has_prev_page,
+                    },
+                    current_page: current_pages,
+                });
+                resolve();
+            });
+        }
+        catch (error) {
+            res.status(500).json({
+                status: "error",
+                message: error.message,
+            });
+            reject(error);
+        }
+    });
+};
+exports.getAnimeMovie = getAnimeMovie;
 const getAnimeSeasonList = (req, res) => {
     const { page } = req.query;
     return new Promise((resolve, reject) => {
