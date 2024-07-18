@@ -3,7 +3,6 @@ import * as cheerio from "cheerio";
 import request from "request";
 import { baseURL } from "../lib/baseURL";
 import { IncomingMessage } from "http";
-import { data } from "cheerio/lib/api/attributes";
 
 export const getAnimeOnGoing = (req: Request, res: Response): Promise<void> => {
   const { order_by, page } = req.query;
