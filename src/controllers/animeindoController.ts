@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 import request from "request";
 import { baseURL } from "../lib/baseURL";
 import { IncomingMessage } from "http";
+import { data } from "cheerio/lib/api/attributes";
 
 export const getAnimeOnGoing = (req: Request, res: Response): Promise<void> => {
   const { order_by, page } = req.query;
@@ -14,6 +15,9 @@ export const getAnimeOnGoing = (req: Request, res: Response): Promise<void> => {
         }`,
       };
 
+      let has_next_page = false;
+      let has_prev_page = false;
+      let current_pages = 0;
       const animeList: Array<any> = [];
 
       request(
@@ -53,6 +57,29 @@ export const getAnimeOnGoing = (req: Request, res: Response): Promise<void> => {
               ?.trim();
 
             const image = $(el).find("a > div").attr("data-setbg");
+            const current_page = $(
+              "#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a.current-page"
+            )?.text();
+
+            const get_hash_next = $(
+              "#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(7)"
+            )?.attr("aria-disabled");
+            const get_hash_prev = $(
+              "#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(1)"
+            )?.attr("aria-disabled");
+
+            if (current_page) {
+              current_pages = parseInt(current_page);
+            }
+
+            if (get_hash_prev) {
+              has_prev_page = true;
+            }
+            if (get_hash_next) {
+              has_next_page = true;
+            }
+
+            // if()
 
             animeList.push({
               type: typeList,
@@ -77,6 +104,14 @@ export const getAnimeOnGoing = (req: Request, res: Response): Promise<void> => {
           res.status(200).json({
             status: "success",
             data: filteredAnimeList,
+            total_item: filteredAnimeList.length,
+            has_next: {
+              has_next_page: !has_next_page,
+            },
+            has_prev: {
+              has_prev_page: !has_prev_page,
+            },
+            current_page: current_pages,
           });
 
           resolve();
@@ -102,6 +137,9 @@ export const getAnimeLatest = (req: Request, res: Response): Promise<void> => {
         }`,
       };
 
+      let has_next_page = false;
+      let has_prev_page = false;
+      let current_pages = 0;
       const animeList: Array<any> = [];
 
       request(
@@ -141,6 +179,29 @@ export const getAnimeLatest = (req: Request, res: Response): Promise<void> => {
               ?.trim();
 
             const image = $(el).find("a > div").attr("data-setbg");
+            const current_page = $(
+              "#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a.current-page"
+            )?.text();
+
+            const get_hash_next = $(
+              "#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(7)"
+            )?.attr("aria-disabled");
+            const get_hash_prev = $(
+              "#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(1)"
+            )?.attr("aria-disabled");
+
+            if (current_page) {
+              current_pages = parseInt(current_page);
+            }
+
+            if (get_hash_prev) {
+              has_prev_page = true;
+            }
+            if (get_hash_next) {
+              has_next_page = true;
+            }
+
+            // if()
 
             animeList.push({
               type: typeList,
@@ -165,8 +226,15 @@ export const getAnimeLatest = (req: Request, res: Response): Promise<void> => {
           res.status(200).json({
             status: "success",
             data: filteredAnimeList,
+            total_item: filteredAnimeList.length,
+            has_next: {
+              has_next_page: !has_next_page,
+            },
+            has_prev: {
+              has_prev_page: !has_prev_page,
+            },
+            current_page: current_pages,
           });
-
           resolve();
         }
       );
@@ -189,7 +257,9 @@ export const getAnimeMovie = (req: Request, res: Response): Promise<void> => {
           page || 1
         }`,
       };
-
+      let has_next_page = false;
+      let has_prev_page = false;
+      let current_pages = 0;
       const animeList: Array<any> = [];
 
       request(
@@ -229,6 +299,29 @@ export const getAnimeMovie = (req: Request, res: Response): Promise<void> => {
               ?.trim();
 
             const image = $(el).find("a > div").attr("data-setbg");
+            const current_page = $(
+              "#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a.current-page"
+            )?.text();
+
+            const get_hash_next = $(
+              "#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(7)"
+            )?.attr("aria-disabled");
+            const get_hash_prev = $(
+              "#animeList > div.col-lg-12.col-md-12.col-sm-12.mt-3 > div > div > a:nth-child(1)"
+            )?.attr("aria-disabled");
+
+            if (current_page) {
+              current_pages = parseInt(current_page);
+            }
+
+            if (get_hash_prev) {
+              has_prev_page = true;
+            }
+            if (get_hash_next) {
+              has_next_page = true;
+            }
+
+            // if()
 
             animeList.push({
               type: typeList,
@@ -253,6 +346,14 @@ export const getAnimeMovie = (req: Request, res: Response): Promise<void> => {
           res.status(200).json({
             status: "success",
             data: filteredAnimeList,
+            total_item: filteredAnimeList.length,
+            has_next: {
+              has_next_page: !has_next_page,
+            },
+            has_prev: {
+              has_prev_page: !has_prev_page,
+            },
+            current_page: current_pages,
           });
 
           resolve();

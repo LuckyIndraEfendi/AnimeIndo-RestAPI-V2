@@ -26,8 +26,8 @@ app.use(
 
 app.get("/", (req: Request, res: Response) => {
   res.json({
-    message: "Welcome to Express & TypeScript Server",
-    route: "Go to our route /api/v1/anime",
+    message: "Welcome to LuckyAnime Indo V2 & TypeScript Server",
+    route: "Go to our route /api/v2/anime",
   });
 });
 
