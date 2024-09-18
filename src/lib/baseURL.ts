@@ -1,1 +1,1 @@
-export const baseURL = `https://kuramanime.boo`;
+export const baseURL = `https://kuramanime.dad`;
